@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DESAI_S // SECURE TERMINAL | GCIH | CISM | AWS-SECURITY</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700;800&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --terminal-green: #00ff41;
+            --terminal-amber: #ffb000;
+            --terminal-red: #ff003c;
+            --terminal-cyan: #00f0ff;
+            --terminal-dim: #003b00;
+            --terminal-bg: #050505;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: var(--terminal-bg);
+            color: var(--terminal-green);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        /* Boot Sequence */
+        #boot-sequence {
+            position: fixed;
+            inset: 0;
+            background: var(--terminal-bg);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 2rem;
+            font-size: 0.875rem;
+        }
+        
+        .boot-line {
+            opacity: 0;
+            transform: translateY(10px);
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Custom Cursor */
+        .cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--terminal-green);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 99999;
+            mix-blend-mode: difference;
+            transition: width 0.2s, height 0.2s, background 0.2s;
+            transform: translate(-50%, -50%);
+        }
+        
+        .cursor.hover {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 255, 65, 0.1);
+            border-color: var(--terminal-cyan);
+        }
+        
+        @media (pointer: coarse) {
+            .cursor { display: none; }
+            body { cursor: auto; }
+        }
+        
+        /* CRT Effects */
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 255, 65, 0.03) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+            animation: scanline 10s linear infinite;
+        }
+        
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
+        }
+        
+        /* Glitch Text */
+        .glitch {
+            position: relative;
+            animation: glitch-skew 1s infinite linear alternate-reverse;
+        }
+        
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 var(--terminal-red);
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+        
+        .glitch::after {
+            left: -2px;
+            text-shadow: -2px 0 var(--terminal-cyan);
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+        
+        @keyframes glitch-anim {
+            0% { clip: rect(31px, 9999px, 94px, 0); }
+            20% { clip: rect(58px, 9999px, 14px, 0); }
+            40% { clip: rect(12px, 9999px, 83px, 0); }
+            60% { clip: rect(89px, 9999px, 33px, 0); }
+            80% { clip: rect(45px, 9999px, 67px, 0); }
+            100% { clip: rect(23px, 9999px, 91px, 0); }
+        }
+        
+        @keyframes glitch-anim2 {
+            0% { clip: rect(65px, 9999px, 99px, 0); }
+            20% { clip: rect(12px, 9999px, 45px, 0); }
+            40% { clip: rect(78px, 9999px, 23px, 0); }
+            60% { clip: rect(34px, 9999px, 12px, 0); }
+            80% { clip: rect(67px, 9999px, 78px, 0); }
+            100% { clip: rect(89px, 9999px, 34px, 0); }
+        }
+        
+        /* Achievement System (Option 4) */
+        .achievement-container {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            z-index: 95;
+            pointer-events: none;
+        }
+        
+        .achievement-toast {
+            background: rgba(5, 5, 5, 0.95);
+            border: 1px solid var(--terminal-green);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            max-width: 300px;
+            transform: translateX(150%);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+            pointer-events: auto;
+        }
+        
+        .achievement-badge {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: var(--terminal-green);
+            margin-right: 8px;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* Threat Popups (Option 2) */
+        .threat-popup {
+            position: fixed;
+            background: rgba(5, 5, 5, 0.98);
+            border-left: 3px solid;
+            padding: 1rem;
+            font-size: 0.75rem;
+            max-width: 280px;
+            z-index: 90;
+            transform: translateX(150%);
+            opacity: 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+        }
+        
+        .threat-popup.f1 { border-color: #DC2626; color: #DC2626; }
+        .threat-popup.praise { border-color: var(--terminal-cyan); color: var(--terminal-cyan); }
+        .threat-popup.standard { border-color: var(--terminal-amber); color: var(--terminal-amber); }
+        
+        /* Encrypted Testimonials (Option 6) */
+        .encrypted-card {
+            background: rgba(10, 10, 10, 0.6);
+            border: 1px solid var(--terminal-amber);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .encrypted-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 176, 0, 0.1), transparent);
+            animation: scan 3s infinite;
+        }
+        
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .cipher-text {
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 2px;
+            color: var(--terminal-amber);
+            filter: blur(2px);
+            transition: all 0.5s;
+        }
+        
+        .decrypting .cipher-text {
+            animation: decrypt-glitch 0.2s infinite;
+        }
+        
+        @keyframes decrypt-glitch {
+            0% { clip-path: inset(10% 0 80% 0); transform: translate(-2px, 2px); }
+            20% { clip-path: inset(80% 0 10% 0); transform: translate(2px, -2px); }
+            40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, -2px); }
+            60% { clip-path: inset(20% 0 60% 0); transform: translate(2px, 2px); }
+            80% { clip-path: inset(60% 0 20% 0); transform: translate(-2px, 2px); }
+            100% { clip-path: inset(30% 0 40% 0); transform: translate(0); }
+        }
+        
+        /* Saumya-Bot (Option 10) */
+        #saumya-bot {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: var(--terminal-bg);
+            border: 2px solid var(--terminal-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 80;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+        }
+        
+        #saumya-bot:hover {
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.4);
+        }
+        
+        #saumya-bot.has-message::after {
+            content: "!";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--terminal-red);
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            animation: pulse 2s infinite;
+        }
+        
+        .chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 380px;
+            max-height: 500px;
+            background: rgba(5, 5, 5, 0.98);
+            border: 1px solid var(--terminal-cyan);
+            z-index: 79;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+        }
+        
+        @media (max-width: 640px) {
+            .chat-window {
+                width: 90vw;
+                right: 5vw;
+                bottom: 100px;
+            }
+        }
+        
+        .chat-header {
+            background: rgba(0, 240, 255, 0.1);
+            padding: 1rem;
+            border-bottom: 1px solid var(--terminal-cyan);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            max-height: 300px;
+            font-size: 0.85rem;
+        }
+        
+        .message {
+            margin-bottom: 1rem;
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+            line-height: 1.5;
+        }
+        
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        .message.user { color: var(--terminal-green); text-align: right; }
+        .message.bot { color: var(--terminal-cyan); }
+        
+        .chat-input-container {
+            padding: 1rem;
+            border-top: 1px solid var(--terminal-cyan);
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .chat-input {
+            flex: 1;
+            background: transparent;
+            border: 1px solid var(--terminal-cyan);
+            color: var(--terminal-cyan);
+            padding: 0.5rem;
+            font-family: inherit;
+            outline: none;
+        }
+        
+        .chat-input::placeholder {
+            color: rgba(0, 240, 255, 0.3);
+        }
+        
+        /* Terminal Styling */
+        .terminal-window {
+            background: rgba(0, 10, 0, 0.9);
+            border: 1px solid var(--terminal-green);
+            position: relative;
+        }
+        
+        .terminal-header {
+            background: rgba(0, 255, 65, 0.1);
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid var(--terminal-green);
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .terminal-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .terminal-body {
+            padding: 1.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .command-line {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .prompt {
+            color: var(--terminal-green);
+            margin-right: 0.5rem;
+        }
+        
+        .cursor-blink {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: var(--terminal-green);
+            animation: blink-cursor 1s infinite;
+            margin-left: 2px;
+        }
+        
+        @keyframes blink-cursor {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        /* Skill Bars */
+        .skill-bar {
+            background: rgba(0, 255, 65, 0.1);
+            height: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .skill-fill {
+            height: 100%;
+            background: var(--terminal-green);
+            box-shadow: 0 0 10px var(--terminal-green);
+            width: 0%;
+            transition: width 1.5s ease-out;
+        }
+        
+        /* Hex Grid for Certs */
+        .hex-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        
+        .cert-card {
+            background: linear-gradient(135deg, rgba(0,255,65,0.05) 0%, rgba(0,0,0,0) 100%);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            padding: 1.5rem;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .cert-card:hover {
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+            transform: translateY(-5px);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border: 1px solid var(--terminal-green);
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+        }
+        
+        .status-badge.active {
+            background: rgba(0, 255, 65, 0.1);
+        }
+        
+        .status-badge.expired {
+            border-color: var(--terminal-red);
+            color: var(--terminal-red);
+            background: rgba(255, 0, 60, 0.1);
+        }
+        
+        /* Timeline */
+        .timeline-item {
+            position: relative;
+            padding-left: 2rem;
+            border-left: 2px solid rgba(0, 255, 65, 0.2);
+            padding-bottom: 3rem;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            background: var(--terminal-bg);
+            border: 2px solid var(--terminal-green);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--terminal-green);
+        }
+        
+        .timeline-date {
+            font-size: 0.75rem;
+            color: var(--terminal-amber);
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Konami RGB Effect */
+        .konami-rainbow {
+            animation: rainbow 2s linear infinite;
+        }
+        
+        @keyframes rainbow {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+        
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .glitch::before, .glitch::after { display: none; }
+            .boot-text { font-size: 0.75rem; }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body class="antialiased">
+
+    <!-- Boot Sequence Overlay -->
+    <div id="boot-sequence">
+        <div id="boot-text"></div>
+    </div>
+
+    <!-- Visual Effects -->
+    <div class="scanline"></div>
+    <canvas id="matrix-canvas" class="fixed inset-0 opacity-20 pointer-events-none z-0"></canvas>
+    <div class="cursor" id="cursor"></div>
+
+    <!-- Achievement Container -->
+    <div class="achievement-container" id="achievementContainer"></div>
+
+    <!-- Threat Popup Container -->
+    <div id="threatContainer" class="fixed inset-0 pointer-events-none z-50"></div>
+
+    <!-- Saumya-Bot -->
+    <div id="saumya-bot" onclick="toggleChat()" title="Digital Twin Online">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--terminal-cyan);">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <line x1="9" y1="9" x2="15" y2="9"></line>
+            <line x1="9" y1="15" x2="15" y2="15"></line>
+        </svg>
+    </div>
+
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            <div>
+                <div style="color: var(--terminal-cyan); font-weight: bold; font-size: 0.9rem;">SAUMYA-BOT v2.0</div>
+                <div style="font-size: 0.7rem; color: var(--terminal-green); margin-top: 2px;">
+                    <span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span>
+                    ONLINE | Threat Hunting Mode
+                </div>
+            </div>
+            <button onclick="toggleChat()" style="background: none; border: none; color: var(--terminal-cyan); cursor: pointer; font-size: 1.2rem;">×</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                > Initializing secure channel...<br>
+                > Saumya is currently monitoring SIEM logs.<br>
+                > I am his digital twin. Available commands:<br>
+                &nbsp;&nbsp;- certs (GCIH, CISM, AWS)<br>
+                &nbsp;&nbsp;- f1 (Forza Ferrari)<br>
+                &nbsp;&nbsp;- valorant (Duelist main)<br>
+                &nbsp;&nbsp;- web3 (Solidity/ZKPs)<br>
+                &nbsp;&nbsp;- contact (Encrypted comms)
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Enter command..." onkeypress="handleChatKey(event)">
+            <button onclick="sendChatMessage()" style="background: var(--terminal-cyan); color: black; border: none; padding: 0.5rem 1rem; cursor: pointer; font-family: inherit; font-weight: bold;">SEND</button>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full bg-black/80 backdrop-blur-md border-b border-green-500/20 z-40 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="text-green-500 font-bold tracking-widest glitch text-lg" data-text="[DESAI_S]">[DESAI_S]</div>
+            <div class="hidden md:flex gap-8 text-xs tracking-widest">
+                <a href="#intel" class="hover:text-cyan-400 transition-colors terminal-hover">[INTEL]</a>
+                <a href="#arsenal" class="hover:text-cyan-400 transition-colors terminal-hover">[ARSENAL]</a>
+                <a href="#operations" class="hover:text-cyan-400 transition-colors terminal-hover">[OPS_LOG]</a>
+                <a href="#vault" class="hover:text-cyan-400 transition-colors terminal-hover">[VAULT]</a>
+                <a href="#refs" class="hover:text-amber-400 transition-colors terminal-hover">[REFS]</a>
+                <a href="#terminal" class="text-red-500 hover:text-red-400 transition-colors terminal-hover animate-pulse">[CONSOLE]</a>
+            </div>
+            <button class="md:hidden text-green-500" onclick="alert('Mobile navigation: Scroll to sections')">☰</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+        <div class="relative z-10 max-w-6xl mx-auto px-6 text-center">
+            <div class="mb-4 text-xs tracking-[0.3em] text-green-700 animate-pulse">
+                SECURITY CLEARANCE: LEVEL 5 // GCIH | CISM | AWS-SECURITY | SC-200
+            </div>
+            
+            <h1 class="text-5xl md:text-8xl font-bold mb-6 leading-tight">
+                <span class="block text-white mb-2">SAUMYA</span>
+                <span class="block text-green-500 glitch" data-text="DESAI">DESAI</span>
+            </h1>
+            
+            <div class="max-w-2xl mx-auto mb-8 h-20 flex items-center justify-center">
+                <p class="text-xl md:text-2xl text-gray-400" id="typewriter"></p>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-4 text-xs mb-12">
+                <span class="border border-green-500/30 px-4 py-2 rounded terminal-hover cursor-pointer" onmouseenter="playHover()">DFIR_ANALYST</span>
+                <span class="border border-green-500/30 px-4 py-2 rounded terminal-hover cursor-pointer" onmouseenter="playHover()">PENTESTER</span>
+                <span class="border border-cyan-500/30 px-4 py-2 rounded text-cyan-400 terminal-hover cursor-pointer" onmouseenter="playHover()">SOLIDITY_DEV</span>
+                <span class="border border-red-500/30 px-4 py-2 rounded text-red-400 terminal-hover cursor-pointer" onmouseenter="playHover()">F1_FAN:FERRARI</span>
+                <span class="border border-purple-500/30 px-4 py-2 rounded text-purple-400 terminal-hover cursor-pointer" onmouseenter="playHover()">DUELIST_MAIN</span>
+            </div>
+
+            <div class="text-xs text-gray-600 tracking-widest animate-bounce mt-12">
+                [ SCROLL TO INITIATE BREACH PROTOCOL ]
+            </div>
+        </div>
+    </section>
+
+    <!-- Intel Section (About) -->
+    <section id="intel" class="py-24 relative border-t border-green-500/10">
+        <div class="max-w-5xl mx-auto px-6">
+            <div class="flex items-center mb-12">
+                <div class="h-px bg-green-500 flex-1 opacity-30"></div>
+                <h2 class="px-4 text-2xl font-bold text-green-500">THREAT_INTEL</h2>
+                <div class="h-px bg-green-500 flex-1 opacity-30"></div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="terminal-window">
+                    <div class="terminal-header">
+                        <div class="terminal-btn bg-red-500"></div>
+                        <div class="terminal-btn bg-yellow-500"></div>
+                        <div class="terminal-btn bg-green-500"></div>
+                        <span class="ml-2 text-xs opacity-50">identity_decryption.sh</span>
+                    </div>
+                    <div class="terminal-body space-y-4 text-sm">
+                        <div class="command-line">
+                            <span class="prompt">root@saumya:~$</span>
+                            <span>cat profile.dat</span>
+                        </div>
+                        <div class="text-gray-300 pl-4">
+                            <p class="mb-2">> I love puzzles 🧩 especially the digital kind hiding in networks, code, and logs.</p>
+                            <p class="mb-2">> Formerly on <span class="text-cyan-400">Siemens' DFIR team</span> 🕵️‍♂️, investigating global incidents, analyzing memory & network forensics.</p>
+                            <p class="mb-2">> Started at <span class="text-amber-400">Accenture</span> as penetration tester 🔓, learning how attackers think.</p>
+                            <p class="mb-2">> Cybersecurity gives me the same rush as gaming 🎮. Played Valorant on college esports team (Immortal rank).</p>
+                            <p class="mb-2">> Off-duty: obsessed with Formula 1 🏎️ precision, performance, and that edge-of-seat adrenaline.</p>
+                            <p class="text-green-400">> Status: Currently threat hunting @ AutoCanada</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="border border-green-500/20 p-4 text-center hover:border-green-500/50 transition-colors">
+                            <div class="text-3xl font-bold text-green-500 mb-1">5+</div>
+                            <div class="text-xs text-gray-500">YEARS ACTIVE</div>
+                        </div>
+                        <div class="border border-cyan-500/20 p-4 text-center hover:border-cyan-500/50 transition-colors">
+                            <div class="text-3xl font-bold text-cyan-500 mb-1">10</div>
+                            <div class="text-xs text-gray-500">CERTIFICATIONS</div>
+                        </div>
+                        <div class="border border-amber-500/20 p-4 text-center hover:border-amber-500/50 transition-colors">
+                            <div class="text-3xl font-bold text-amber-500 mb-1">03</div>
+                            <div class="text-xs text-gray-500">CONTINENTS</div>
+                        </div>
+                        <div class="border border-red-500/20 p-4 text-center hover:border-red-500/50 transition-colors">
+                            <div class="text-3xl font-bold text-red-500 mb-1">∞</div>
+                            <div class="text-xs text-gray-500">PUZZLES SOLVED</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 flex-wrap">
+                        <span class="text-xs bg-green-500/10 text-green-400 px-2 py-1 rounded">MUMBAI</span>
+                        <span class="text-xs bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded">TORONTO</span>
+                        <span class="text-xs bg-amber-500/10 text-amber-400 px-2 py-1 rounded">SIEMENS</span>
+                        <span class="text-xs bg-purple-500/10 text-purple-400 px-2 py-1 rounded">AUTOCANADA</span>
+                        <span class="text-xs bg-red-500/10 text-red-400 px-2 py-1 rounded">FERRARI</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Arsenal (Skills) -->
+    <section id="arsenal" class="py-24 bg-black/50 border-t border-green-500/10">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-green-500 mb-4">ARSENAL</h2>
+                <p class="text-gray-500 text-sm">Weapons-grade capabilities</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="space-y-6">
+                    <h3 class="text-cyan-400 text-sm tracking-widest mb-4">OFFENSIVE</h3>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span>Penetration Testing</span>
+                            <span>95%</span>
+                        </div>
+                        <div class="skill-bar"><div class="skill-fill" data-width="95%"></div></div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span>Web App Security</span>
+                            <span>90%</span>
+                        </div>
+                        <div class="skill-bar"><div class="skill-fill" data-width="90%"></div></div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span>Social Engineering</span>
+                            <span>85%</span>
+                        </div>
+                        <div class="skill-bar"><div class="skill-fill" data-width="85%"></div></div>
+                    </div>
+
+                    <div class="flex gap-2 flex-wrap mt-4">
+                        <span class="text-[10px] border border-cyan-500/30 px-2 py-1">Burp Suite</span>
+                        <span class="text-[10px] border border-cyan-500/30 px-2 py-1">Metasploit</span>
+                        <span class="text-[10px] border border-cyan-500/30 px-2 py-1">Nmap</span>
+                        <span class="text-[10px] border border-cyan-500/30 px-2 py-1">OSCP</span>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <h3 class="text-amber-400 text-sm tracking-widest mb-4">DEFENSIVE</h3>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span>Incident Response</span>
+                            <span>92%</span>
+                        </div>
+                        <div class="skill-bar"><div class="skill-fill bg-amber-400 shadow-amber-400" data-width="92%"></div></div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span>Digital Forensics</span>
+                            <span>88%</span>
+                        </div>
+                        <div class="skill-bar"><div class="skill-fill bg-amber-400 shadow-amber-400" data-width="88%"></div></div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span>Threat Hunting</span>
+                            <span>90%</span>
+                        </div>
+                        <div class="skill-bar"><div class="skill-fill bg-amber-400 shadow-amber-400" data-width="90%"></div></div>
+                    </div>
+
+                    <div class="flex gap-2 flex-wrap mt-4">
+                        <span class="text-[10px] border border-amber-500/30 px-2 py-1">EnCase</span>
+                        <span class="text-[10px] border border-amber-500/30 px-2 py-1">Velociraptor</span>
+                        <span class="text-[10px] border border-amber-500/30 px-2 py-1">ELK Stack</span>
+                        <span class="text-[10px] border border-amber-500/30 px-2 py-1">GCIH</span>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <h3 class="text-purple-400 text-sm tracking-widest mb-4">WEB3 / CLOUD</h3>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span>Solidity / Smart Contracts</span>
+                            <span>85%</span>
+                        </div>
+                        <div class="skill-bar"><div class="skill-fill bg-purple-400 shadow-purple-400" data-width="85%"></div></div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span>AWS Security</span>
+                            <span>90%</span>
+                        </div>
+                        <div class="skill-bar"><div class="skill-fill bg-purple-400 shadow-purple-400" data-width="90%"></div></div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-2">
+                            <span>Zero-Knowledge Proofs</span>
+                            <span>75%</span>
+                        </div>
+                        <div class="skill-bar"><div class="skill-fill bg-purple-400 shadow-purple-400" data-width="75%"></div></div>
+                    </div>
+
+                    <div class="flex gap-2 flex-wrap mt-4">
+                        <span class="text-[10px] border border-purple-500/30 px-2 py-1">Rust</span>
+                        <span class="text-[10px] border border-purple-500/30 px-2 py-1">Terraform</span>
+                        <span class="text-[10px] border border-purple-500/30 px-2 py-1">GuardDuty</span>
+                        <span class="text-[10px] border border-purple-500/30 px-2 py-1">ZKP</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Operations (Experience) -->
+    <section id="operations" class="py-24 border-t border-green-500/10">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-green-500 mb-4">OPERATION_LOGS</h2>
+                <p class="text-gray-500 text-sm">Chronological deployment history</p>
+            </div>
+
+            <div class="relative">
+                <div class="timeline-item">
+                    <div class="timeline-date">NOV 2025 - PRESENT</div>
+                    <h3 class="text-xl font-bold text-white mb-2">IT System Administrator</h3>
+                    <p class="text-cyan-400 text-sm mb-2">The Gear Centre Group | Edmonton, AB (Remote)</p>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Permanent part-time infrastructure management. Maintaining enterprise systems and security posture.
+                    </p>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">FEB 2023 - PRESENT</div>
+                    <h3 class="text-xl font-bold text-white mb-2">Security Analyst</h3>
+                    <p class="text-cyan-400 text-sm mb-2">AutoCanada | Remote</p>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-2">
+                        Defending automotive infrastructure across Canada. SIEM monitoring, incident response, and threat hunting in enterprise environments.
+                    </p>
+                    <div class="flex gap-2">
+                        <span class="text-[10px] bg-cyan-500/10 text-cyan-400 px-2 py-1">SIEM</span>
+                        <span class="text-[10px] bg-cyan-500/10 text-cyan-400 px-2 py-1">EDR</span>
+                        <span class="text-[10px] bg-cyan-500/10 text-cyan-400 px-2 py-1">THREAT_HUNT</span>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">FEB 2023 - NOV 2025</div>
+                    <h3 class="text-xl font-bold text-white mb-2">Supervisor</h3>
+                    <p class="text-amber-400 text-sm mb-2">Petro-Canada Fuels | London, ON (Hybrid)</p>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Supply chain management, emergency spill response, risk management, and team leadership in critical infrastructure environment.
+                    </p>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">AUG 2021 - DEC 2022</div>
+                    <h3 class="text-xl font-bold text-white mb-2">Jr Penetration Tester</h3>
+                    <p class="text-red-400 text-sm mb-2">Accenture | Remote</p>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-2">
+                        Executing hands-on ethical attacks across networks, web apps, and cloud environments. Burp Suite, Metasploit, Nmap, advanced reconnaissance.
+                    </p>
+                    <div class="flex gap-2">
+                        <span class="text-[10px] bg-red-500/10 text-red-400 px-2 py-1">GPEN</span>
+                        <span class="text-[10px] bg-red-500/10 text-red-400 px-2 py-1">OWASP</span>
+                        <span class="text-[10px] bg-red-500/10 text-red-400 px-2 py-1">CLOUD_PENTEST</span>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">JAN 2021 - JUN 2021</div>
+                    <h3 class="text-xl font-bold text-white mb-2">DFIR Analyst</h3>
+                    <p class="text-amber-400 text-sm mb-2">Siemens | Global Operations</p>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-2">
+                        Led high-impact digital forensics and incident response across enterprise environments. Evidence acquisition, malware analysis, and threat hunting using EnCase, Velociraptor, Autopsy, ELK.
+                    </p>
+                </div>
+
+                <div class="timeline-item border-l-0">
+                    <div class="timeline-date">JUL 2016 - NOV 2017</div>
+                    <h3 class="text-xl font-bold text-white mb-2">Software Developer</h3>
+                    <p class="text-green-400 text-sm mb-2">wayRabbit | Ahmedabad, India</p>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Built eBay-like auction system using Java Spring, MySQL, Docker on Google Cloud Build. Focus on secure account management and transaction history.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Vault (Certifications) -->
+    <section id="vault" class="py-24 bg-black/30 border-t border-green-500/10">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-green-500 mb-4">SECURE_VAULT</h2>
+                <p class="text-gray-500 text-sm">Verified credentials and clearances</p>
+            </div>
+
+            <div class="hex-grid">
+                <div class="cert-card">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="status-badge active">ACTIVE</div>
+                        <div class="text-[10px] text-gray-500">ISACA</div>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1 text-cyan-400">CISM</h3>
+                    <p class="text-xs text-gray-400 mb-2">Certified Information Security Manager</p>
+                    <p class="text-[10px] text-gray-600">Issued: Apr 2025 | Exp: Jan 2029</p>
+                    <p class="text-[10px] text-gray-600 mt-1">ID: 252802506</p>
+                </div>
+
+                <div class="cert-card">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="status-badge active">ACTIVE</div>
+                        <div class="text-[10px] text-gray-500">GIAC</div>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1 text-amber-400">GCIH</h3>
+                    <p class="text-xs text-gray-400 mb-2">Certified Incident Handler</p>
+                    <p class="text-[10px] text-gray-600">Issued: Nov 2023</p>
+                </div>
+
+                <div class="cert-card">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="status-badge active">ACTIVE</div>
+                        <div class="text-[10px] text-gray-500">AWS</div>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1 text-orange-400">AWS Security-Specialty</h3>
+                    <p class="text-xs text-gray-400 mb-2">Cloud Security Professional</p>
+                    <p class="text-[10px] text-gray-600">Issued: Feb 2025 | Exp: Feb 2028</p>
+                </div>
+
+                <div class="cert-card">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="status-badge active">ACTIVE</div>
+                        <div class="text-[10px] text-gray-500">CompTIA</div>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1 text-red-400">Security+ CE</h3>
+                    <p class="text-xs text-gray-400 mb-2">Cybersecurity Fundamentals</p>
+                    <p class="text-[10px] text-gray-600">Issued: Feb 2025 | Exp: Feb 2028</p>
+                </div>
+
+                <div class="cert-card">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="status-badge active">ACTIVE</div>
+                        <div class="text-[10px] text-gray-500">GIAC</div>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1 text-red-400">GPEN</h3>
+                    <p class="text-xs text-gray-400 mb-2">Certified Penetration Tester</p>
+                    <p class="text-[10px] text-gray-600">Issued: Jun 2021</p>
+                </div>
+
+                <div class="cert-card">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="status-badge active">ACTIVE</div>
+                        <div class="text-[10px] text-gray-500">Microsoft</div>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1 text-blue-400">SC-200</h3>
+                    <p class="text-xs text-gray-400 mb-2">Security Operations Analyst</p>
+                    <p class="text-[10px] text-gray-600">Issued: Apr 2024 | Exp: Apr 2027</p>
+                </div>
+
+                <div class="cert-card">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="status-badge active">ACTIVE</div>
+                        <div class="text-[10px] text-gray-500">ISC2</div>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1 text-purple-400">CISSP (Associate)</h3>
+                    <p class="text-xs text-gray-400 mb-2">Systems Security Professional</p>
+                    <p class="text-[10px] text-gray-600">Issued: Oct 2024</p>
+                    <p class="text-[10px] text-gray-500 mt-1 italic">Working toward full certification</p>
+                </div>
+
+                <div class="cert-card border-dashed border-gray-700">
+                    <div class="text-center py-8 text-gray-600">
+                        <div class="text-2xl mb-2">+</div>
+                        <div class="text-xs">IN_PROGRESS</div>
+                        <div class="text-[10px] mt-1 text-gray-500">OSCP / OSWE</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center">
+                <p class="text-xs text-gray-600">Additional: SC-900, Google Cybersecurity Certificate, Cyfrin Updraft (Web3/Solidity)</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects -->
+    <section class="py-24 border-t border-green-500/10">
+        <div class="max-w-5xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-green-500 mb-4">FIELD_OPS</h2>
+                <p class="text-gray-500 text-sm">Classified project documentation</p>
+            </div>
+
+            <div class="space-y-8">
+                <div class="terminal-window hover:border-cyan-500/50 transition-colors cursor-pointer terminal-hover" onclick="window.open('https://github.com/omi201/aws-security-project', '_blank')">
+                    <div class="terminal-header">
+                        <span class="text-xs opacity-50">OP: CLOUD_FORTRESS // CLASSIFICATION: PUBLIC</span>
+                    </div>
+                    <div class="terminal-body">
+                        <h3 class="text-cyan-400 font-bold mb-2">AWS Security Framework (Terraform)</h3>
+                        <p class="text-sm text-gray-300 mb-3">
+                            Terraform-powered AWS security automation integrating GuardDuty, Security Hub, IAM, WAF, KMS, and Backup. Automated identity management, threat detection, and disaster recovery for enterprise cloud environments.
+                        </p>
+                        <div class="flex gap-2 text-[10px]">
+                            <span class="text-amber-400">IaC</span>
+                            <span class="text-amber-400">AWS</span>
+                            <span class="text-amber-400">Python</span>
+                            <span class="text-amber-400">DevSecOps</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="terminal-window hover:border-purple-500/50 transition-colors cursor-pointer terminal-hover" onclick="window.open('https://github.com/omi201/decentralized-voting', '_blank')">
+                    <div class="terminal-header">
+                        <span class="text-xs opacity-50">OP: DEMOCRACY_LEDGER // CLASSIFICATION: PUBLIC</span>
+                    </div>
+                    <div class="terminal-body">
+                        <h3 class="text-purple-400 font-bold mb-2">Decentralized Voting System (Web3)</h3>
+                        <p class="text-sm text-gray-300 mb-3">
+                            Ethereum-based voting system using Solidity smart contracts, Rust backend API, and WebAssembly frontend. Features cryptographic verification, transparent tallying, and tamper-proof election records.
+                        </p>
+                        <div class="flex gap-2 text-[10px]">
+                            <span class="text-purple-400">Solidity</span>
+                            <span class="text-purple-400">Rust</span>
+                            <span class="text-purple-400">WebAssembly</span>
+                            <span class="text-purple-400">Web3.js</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="terminal-window hover:border-green-500/50 transition-colors cursor-pointer terminal-hover" onclick="window.open('https://github.com/omi201/ImportExport_Contract', '_blank')">
+                    <div class="terminal-header">
+                        <span class="text-xs opacity-50">OP: SILK_ROAD_V2 // CLASSIFICATION: PUBLIC</span>
+                    </div>
+                    <div class="terminal-body">
+                        <h3 class="text-green-400 font-bold mb-2">ImportExport Smart Contract (ZKP)</h3>
+                        <p class="text-sm text-gray-300 mb-3">
+            Blockchain-powered escrow system for global trade with Zero-Knowledge Proof integration. Automated payments upon shipment verification, time-locked refunds, and private trade verification without revealing sensitive data.
+                        </p>
+                        <div class="flex gap-2 text-[10px]">
+                            <span class="text-green-400">ZKP</span>
+                            <span class="text-green-400">Solidity</span>
+                            <span class="text-green-400">DeFi</span>
+                            <span class="text-green-400">Supply_Chain</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials with Decryption (Option 6) -->
+    <section id="refs" class="py-24 bg-black/30 border-t border-green-500/10">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="flex items-center mb-12">
+                <div class="h-px bg-amber-500 flex-1 opacity-30"></div>
+                <h2 class="px-4 text-2xl font-bold text-amber-500">ENCRYPTED_REFERENCES</h2>
+                <div class="h-px bg-amber-500 flex-1 opacity-30"></div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Testimonial 1 -->
+                <div class="encrypted-card p-6 rounded" data-encrypted="true">
+                    <div class="flex justify-between mb-4 text-xs">
+                        <span class="text-amber-400">FILE: VINEET_GOSWAMI.ENC</span>
+                        <span class="text-gray-500 status">[ LOCKED ]</span>
+                    </div>
+                    <div class="cipher-text mb-4" style="font-size: 1.1rem; line-height: 1.8;">
+                        XJ9#mK2$pL5@vN8*qR4&wT7...
+                    </div>
+                    <div class="decrypted-content hidden">
+                        <p class="text-gray-300 text-sm leading-relaxed mb-4">
+                            "I had the pleasure of collaborating with Saumya, whose deep expertise in cybersecurity was instrumental in enhancing the security and efficiency of our systems. Their proactive approach to identifying vulnerabilities, implementing robust security measures, and ensuring compliance with the latest standards gave us unmatched confidence in our infrastructure. Their innovative insights, particularly in applying cybersecurity strategies to the Web3 space, helped safeguard critical assets and streamline operations. Saumya is a true expert in the field and a trusted partner for any security-focused project."
+                        </p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs">VG</div>
+                            <div>
+                                <div class="text-amber-400 text-sm">Vineet Goswami</div>
+                                <div class="text-gray-500 text-xs">Marketing Manager | n8n AI Automations</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="decrypt-bar mt-4 h-1 bg-gray-800 rounded overflow-hidden hidden">
+                        <div class="h-full bg-amber-500 w-0 transition-all duration-3000"></div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 2 -->
+                <div class="encrypted-card p-6 rounded" data-encrypted="true">
+                    <div class="flex justify-between mb-4 text-xs">
+                        <span class="text-amber-400">FILE: SHERYL_LOBO.ENC</span>
+                        <span class="text-gray-500 status">[ LOCKED ]</span>
+                    </div>
+                    <div class="cipher-text mb-4" style="font-size: 1.1rem; line-height: 1.8;">
+                        KpL$3mN*9vB2@xZ5#wQ8&rT4...
+                    </div>
+                    <div class="decrypted-content hidden">
+                        <p class="text-gray-300 text-sm leading-relaxed mb-4">
+                            "Saumya has been an exemplary team member at our gas station, consistently delivering exceptional customer service and contributing significantly to our daily operations. The ability to handle challenging situations with professionalism ensures a seamless experience for our customers. Saumya being an excellent team member has streamlined these tasks to improve efficiency, maintains a clean and organized environment, and always goes the extra mile to assist both customers and his colleagues. He definitely holds strong work ethics, problem-solving skills, and a positive attitude proving to be an invaluable asset to our team and his dedication sets a high standard for excellence in his role."
+                        </p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs">SL</div>
+                            <div>
+                                <div class="text-amber-400 text-sm">Sheryl Lobo</div>
+                                <div class="text-gray-500 text-xs">Site Manager, Petro-Canada Lubricants</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="decrypt-bar mt-4 h-1 bg-gray-800 rounded overflow-hidden hidden">
+                        <div class="h-full bg-amber-500 w-0 transition-all duration-3000"></div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 3 -->
+                <div class="encrypted-card p-6 rounded" data-encrypted="true">
+                    <div class="flex justify-between mb-4 text-xs">
+                        <span class="text-amber-400">FILE: HIREN_LATHIYA.ENC</span>
+                        <span class="text-gray-500 status">[ LOCKED ]</span>
+                    </div>
+                    <div class="cipher-text mb-4" style="font-size: 1.1rem; line-height: 1.8;">
+                        QrT7&wX2#pL5@vN8*mK3$zB9...
+                    </div>
+                    <div class="decrypted-content hidden">
+                        <p class="text-gray-300 text-sm leading-relaxed mb-4">
+                            "I had the privilege of working with Saumya, whose deep knowledge of security concepts and hands-on expertise in multiple domains truly sets him apart. Saumya has successfully developed impactful projects, including Ubuntu OS hardening, showcasing his strong understanding of system security. His exceptional pentesting skills, defensive strategies, and proficiency in identifying vulnerabilities make him a well-rounded cybersecurity professional. Saumya's coding expertise spans all major programming languages, and his ability to detect and debug complex issues in Solidity demonstrates his exceptional attention to detail and problem-solving abilities, especially in the Web3 space. I had the opportunity to collaborate with Saumya during a hackathon where he was part of my team. Thanks to his niche skills, strategic approach, and dedication, our team secured second place—a testament to his innovative thinking and ability to deliver under pressure."
+                        </p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs">HL</div>
+                            <div>
+                                <div class="text-amber-400 text-sm">Hiren Lathiya</div>
+                                <div class="text-gray-500 text-xs">Database Administrator, Micron Technology</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="decrypt-bar mt-4 h-1 bg-gray-800 rounded overflow-hidden hidden">
+                        <div class="h-full bg-amber-500 w-0 transition-all duration-3000"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Terminal Console & Contact -->
+    <section id="terminal" class="py-24 border-t border-green-500/20">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="terminal-window mb-12" id="terminal-window">
+                <div class="terminal-header">
+                    <div class="flex gap-2">
+                        <div class="terminal-btn bg-red-500"></div>
+                        <div class="terminal-btn bg-yellow-500"></div>
+                        <div class="terminal-btn bg-green-500"></div>
+                    </div>
+                    <span class="ml-4 text-xs opacity-50">secure_shell — bash — 80x24</span>
+                </div>
+                <div class="terminal-body h-96 overflow-y-auto font-mono text-sm" id="terminal-output">
+                    <div class="text-green-500 mb-2">Welcome to Secure Terminal v3.0.1 [Saumya Desai]</div>
+                    <div class="text-gray-500 mb-2">Type 'help' for available commands or 'contact' to establish secure connection.</div>
+                    <div class="text-gray-500 mb-4">Session fingerprint: 8F3A-9B2C-1D4E-5F6G</div>
+                </div>
+                <div class="p-4 border-t border-green-500/30 flex items-center bg-black/50">
+                    <span class="text-green-500 mr-2">visitor@desai-secure:~$</span>
+                    <input type="text" id="terminal-input" class="flex-1 bg-transparent border-none outline-none text-green-400 font-mono" placeholder="enter_command" autocomplete="off" spellcheck="false">
+                </div>
+            </div>
+
+            <div class="max-w-xl mx-auto text-center">
+                <h3 class="text-xl font-bold mb-6 text-cyan-400">DIRECT_ENCRYPTION_CHANNEL</h3>
+                <form class="space-y-4" onsubmit="event.preventDefault(); submitContact();">
+                    <input type="email" required placeholder="IDENTITY (Email)" class="w-full bg-transparent border-b border-green-500/30 py-3 text-green-400 focus:outline-none focus:border-green-500 font-mono text-sm">
+                    <input type="text" required placeholder="SUBJECT_LINE" class="w-full bg-transparent border-b border-green-500/30 py-3 text-green-400 focus:outline-none focus:border-green-500 font-mono text-sm">
+                    <textarea rows="4" required placeholder="ENCRYPTED_PAYLOAD (Message)" class="w-full bg-transparent border-b border-green-500/30 py-3 text-green-400 focus:outline-none focus:border-green-500 font-mono text-sm resize-none"></textarea>
+                    <button type="submit" class="w-full mt-6 bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500 py-4 font-mono tracking-widest transition-all hover:shadow-[0_0_20px_rgba(0,255,65,0.3)]">
+                        TRANSMIT_ENCRYPTED
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 text-center border-t border-green-500/10 text-xs text-gray-600 font-mono">
+        <p>&copy; 2025 DESAI_S // SECURE_CONNECTION_TERMINATED // <span class="animate-pulse text-green-500">●</span> SYSTEM_ARMED</p>
+    </footer>
+
+    <script>
+        // Boot Sequence
+        const bootText = [
+            "BIOS DATE 01/30/2025 14:22:51 VER 1.0.2",
+            "CPU: Quantum Core Processor (x64) @ 3.8GHz",
+            "MEM: 128TB Extended Memory Test... OK",
+            "SECURE BOOT ENABLED... VERIFIED",
+            "Loading kernel modules...",
+            "Mounting encrypted volumes...",
+            "Initializing threat detection algorithms...",
+            "Handshaking with SOC... ESTABLISHED",
+            "Decrypting portfolio assets...",
+            "> Identity verified: DESAI, SAUMYA",
+            "> Clearance: GCIH | CISM | AWS-SECURITY",
+            "> Status: Threat Hunter @ AutoCanada",
+            "> Access granted. Welcome, Analyst."
+        ];
+
+        let bootIndex = 0;
+        const bootElement = document.getElementById('boot-text');
+        
+        function typeBoot() {
+            if (bootIndex < bootText.length) {
+                const line = document.createElement('div');
+                line.className = 'boot-line text-green-500 font-mono text-sm mb-1';
+                line.style.animation = 'fadeIn 0.1s forwards';
+                line.textContent = '> ' + bootText[bootIndex];
+                bootElement.appendChild(line);
+                bootIndex++;
+                setTimeout(typeBoot, Math.random() * 300 + 100);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('boot-sequence').style.opacity = '0';
+                    document.getElementById('boot-sequence').style.transition = 'opacity 0.5s';
+                    setTimeout(() => {
+                        document.getElementById('boot-sequence').style.display = 'none';
+                        startMatrix();
+                    }, 500);
+                }, 800);
+            }
+        }
+        
+        setTimeout(typeBoot, 500);
+
+        // Matrix Rain
+        function startMatrix() {
+            const canvas = document.getElementById('matrix-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const chars = "01";
+            const fontSize = 14;
+            const columns = canvas.width / fontSize;
+            const drops = [];
+            
+            for (let i = 0; i < columns; i++) drops[i] = 1;
+            
+            function draw() {
+                ctx.fillStyle = 'rgba(5, 5, 5, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#00ff41';
+                ctx.font = fontSize + 'px monospace';
+                
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars[Math.floor(Math.random() * chars.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                    drops[i]++;
+                }
+            }
+            setInterval(draw, 35);
+        }
+
+        // Typewriter Effect
+        const phrases = [
+            "Securing Digital Frontiers...",
+            "DFIR Analyst @ Siemens (Alumni)...",
+            "Threat Hunter @ AutoCanada...",
+            "Duelist Main | Immortal Rank...",
+            "Forza Ferrari 🏎️...",
+            "Web3 Security Specialist..."
+        ];
+        let phraseIndex = 0, charIndex = 0, isDeleting = false;
+        
+        function typeWriter() {
+            const current = phrases[phraseIndex];
+            const element = document.getElementById('typewriter');
+            
+            if (isDeleting) {
+                element.textContent = current.substring(0, charIndex - 1);
+                charIndex--;
+            } else {
+                element.textContent = current.substring(0, charIndex + 1) + '|';
+                charIndex++;
+            }
+            
+            if (!isDeleting && charIndex === current.length) {
+                isDeleting = true;
+                setTimeout(typeWriter, 2000);
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                phraseIndex = (phraseIndex + 1) % phrases.length;
+                setTimeout(typeWriter, 500);
+            } else {
+                setTimeout(typeWriter, isDeleting ? 50 : 100);
+            }
+        }
+        setTimeout(typeWriter, 2000);
+
+        // Achievement System
+        const achievements = {
+            hover: { name: 'Script Kiddie', desc: 'Explored terminal interface', unlocked: false },
+            scroll: { name: 'Deep Dive', desc: 'Scrolled through classified docs', unlocked: false },
+            decrypt: { name: 'Cryptographer', desc: 'Decrypted secure references', unlocked: false },
+            chat: { name: 'Social Engineer', desc: 'Interrogated the digital twin', unlocked: false },
+            konami: { name: 'Ghost in the Shell', desc: 'Found the Konami Code', unlocked: false }
+        };
+        
+        function unlockAchievement(key) {
+            if (achievements[key].unlocked) return;
+            achievements[key].unlocked = true;
+            
+            const toast = document.createElement('div');
+            toast.className = 'achievement-toast';
+            toast.innerHTML = `
+                <div style="display:flex;align-items:center;margin-bottom:0.5rem;">
+                    <span class="achievement-badge"></span>
+                    <span style="color:#00ff41;font-weight:bold;font-size:0.9rem;">ACHIEVEMENT UNLOCKED</span>
+                </div>
+                <div style="color:white;font-size:0.85rem;font-weight:600;">${achievements[key].name}</div>
+                <div style="color:#666;font-size:0.75rem;">${achievements[key].desc}</div>
+            `;
+            document.getElementById('achievementContainer').appendChild(toast);
+            
+            gsap.to(toast, { x: 0, duration: 0.5, ease: 'power2.out' });
+            setTimeout(() => {
+                gsap.to(toast, { x: '150%', duration: 0.5, ease: 'power2.in', onComplete: () => toast.remove() });
+            }, 5000);
+        }
+
+        // Threat Popups (Random)
+        const threats = [
+            { text: "🚨 DRS ZONE DETECTED<br>drafting behind portfolio...<br>overtake opportunity available", type: "f1", pos: "top-right" },
+            { text: "🎮 THREAT ANALYSIS<br>Visitor skill level: Radiant<br>Reaction time: 0.2ms", type: "praise", pos: "top-left" },
+            { text: "🏎️ PIT STOP COMPLETE<br>4 tires changed<br>Fuel optimized", type: "f1", pos: "bottom-right" },
+            { text: "⚡ DUELIST ULTIMATE READY<br>Lineup perfect<br>One-way active", type: "praise", pos: "bottom-left" },
+            { text: "🔍 SIEM ALERT<br>High IQ detected<br>Recruitment probability: 99.9%", type: "standard", pos: "top-right" }
+        ];
+
+        function showThreat() {
+            const t = threats[Math.floor(Math.random() * threats.length)];
+            const el = document.createElement('div');
+            el.className = `threat-popup ${t.type}`;
+            el.style.cssText = t.pos.includes('top') ? 'top:100px;' : 'bottom:100px;';
+            el.style.cssText += t.pos.includes('right') ? 'right:20px;' : 'left:20px;';
+            el.innerHTML = t.text;
+            document.getElementById('threatContainer').appendChild(el);
+            
+            gsap.to(el, { x: 0, opacity: 1, duration: 0.5 });
+            setTimeout(() => gsap.to(el, { x: t.pos.includes('right') ? '150%' : '-150%', opacity: 0, duration: 0.5, onComplete: () => el.remove() }), 5000);
+        }
+        
+        setInterval(() => { if(Math.random() > 0.6) showThreat(); }, 15000);
+
+        // Testimonial Decryption
+        ScrollTrigger.create({
+            trigger: "#refs",
+            start: "top 80%",
+            onEnter: () => {
+                document.querySelectorAll('[data-encrypted="true"]').forEach((card, i) => {
+                    setTimeout(() => {
+                        const cipher = card.querySelector('.cipher-text');
+                        const decrypted = card.querySelector('.decrypted-content');
+                        const bar = card.querySelector('.decrypt-bar');
+                        const status = card.querySelector('.status');
+                        const barContainer = card.querySelector('.decrypt-bar').parentNode;
+                        
+                        card.classList.add('decrypting');
+                        barContainer.classList.remove('hidden');
+                        status.textContent = "[ DECRYPTING... ]";
+                        
+                        setTimeout(() => { if(bar) bar.style.width = '100%'; }, 100);
+                        
+                        setTimeout(() => {
+                            cipher.style.display = 'none';
+                            decrypted.classList.remove('hidden');
+                            gsap.from(decrypted, { opacity: 0, y: 20, duration: 0.5 });
+                            card.classList.remove('decrypting');
+                            status.textContent = "[ UNLOCKED ]";
+                            status.style.color = "#00ff41";
+                            unlockAchievement('decrypt');
+                        }, 2500);
+                    }, i * 800);
+                });
+            },
+            once: true
+        });
+
+        // Saumya Bot
+        const botKB = {
+            'cert': "Saumya holds: GCIH (Incident Handler), CISM (Manager), AWS Security-Specialty, Security+, GPEN, SC-200, SC-900. Plus Web3 certs from Cyfrin Updraft.",
+            'certs': "goto: cert",
+            'f1': "Forza Ferrari! 🏎️ Saumya supports Scuderia Ferrari. Believes F1 precision mirrors incident response perfectly. Favorite track: Monza.",
+            'ferrari': "goto: f1",
+            'valorant': "Saumya mains Jett (Duelist). Peak rank: Immortal. College esports veteran. Likes to clutch 1v3s under pressure.",
+            'Duelist': "goto: valorant",
+            'game': "goto: valorant",
+            'web3': "Solidity smart contract auditor. Built Decentralized Voting System and ImportExport ZKP contract. Check GitHub: github.com/omi201",
+            'solidity': "goto: web3",
+            'blockchain': "goto: web3",
+            'aws': "AWS Security-Specialty certified. Terraform infrastructure as code. GuardDuty, Security Hub, KMS expert.",
+            'contact': "Secure channels: LinkedIn DM preferred. Or use the encrypted form below. Mention F1 or Valorant for priority response.",
+            'siemens': "DFIR Analyst 2021. Global incident response, malware analysis, memory forensics with EnCase and Velociraptor.",
+            'accenture': "Jr PenTester 2021-2022. Burp Suite, Metasploit, web app pentesting. Learned how attackers think.",
+            'hack': "⚠️ UNAUTHORIZED QUERY // Logging IP... (jk). Saumya does ethical hacking only. White hat verified.",
+            'pineapple': "🚨 DEFCON 1 ALERT 🚨<br>Pineapple on pizza detected!<br><br>Kidding. Saumya accepts all food configurations.",
+            'help': "Available intel: certs, f1, valorant, web3, aws, contact, siemens, accenture. Try 'pineapple' for surprise.",
+            'hello': "Namaste! I'm Saumya's digital twin. He's currently hunting threats or watching F1 quali. How can I assist?"
+        };
+
+        let chatOpen = false;
+        function toggleChat() {
+            chatOpen = !chatOpen;
+            document.getElementById('chatWindow').style.display = chatOpen ? 'flex' : 'none';
+            document.getElementById('saumya-bot').classList.toggle('has-message', !chatOpen);
+            if(chatOpen) { unlockAchievement('chat'); document.getElementById('chatInput').focus(); }
+        }
+
+        function handleChatKey(e) { if(e.key === 'Enter') sendChatMessage(); }
+        
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim().toLowerCase();
+            if(!text) return;
+            
+            addChatMsg('> ' + text, 'user');
+            input.value = '';
+            
+            setTimeout(() => {
+                let resp = botKB[text] || botKB['help'];
+                if(resp.includes('goto:')) resp = botKB[resp.split(':')[1].trim()];
+                addChatMsg(resp, 'bot');
+            }, 600 + Math.random() * 400);
+        }
+
+        function addChatMsg(text, sender) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            div.innerHTML = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Terminal Interface
+        const commands = {
+            help: () => `Available commands:\n  whoami     - Display identity\n  skills     - List capabilities\n  experience - Operation history\n  certs      - View certifications\n  projects   - Field operations\n  contact    - Secure comms\n  clear      - Clear terminal\n  exit       - Close session`,
+            whoami: () => `Identity: Saumya Desai\nRole: Security Analyst / DFIR Specialist\nClearance: GCIH | CISM | AWS-Security\nStatus: Active @ AutoCanada\nLocation: Canada | Originally from India\nInterests: F1 (Ferrari), Valorant (Duelist), Puzzles`,
+            skills: () => `[OFFENSIVE]\n- Penetration Testing (Burp, Metasploit, Nmap)\n- Web App Security, Social Engineering\n- GPEN Certified\n\n[DEFENSIVE]\n- Incident Response & Digital Forensics\n- SIEM (ELK, Splunk), EDR\n- GCIH Certified\n\n[CLOUD/WEB3]\n- AWS Security-Specialty, Terraform\n- Solidity, Rust, Zero-Knowledge Proofs\n- Smart Contract Auditing`,
+            experience: () => `[2025-Present] IT System Admin - Gear Centre Group\n[2023-Present] Security Analyst - AutoCanada\n[2021-2022] Jr PenTester - Accenture\n[2021] DFIR Analyst - Siemens\n[2016-2017] Software Dev - wayRabbit`,
+            certs: () => `GCIH       - Incident Handler (Active)\nCISM       - InfoSecurity Manager (2029)\nAWS-Sec    - Cloud Security (2028)\nSecurity+  - CompTIA (2028)\nGPEN       - PenTester (GIAC)\nSC-200     - Microsoft Security Ops\nCISSP      - Associate (ISC2)`,
+            projects: () => `github.com/omi201\n1. AWS Security Framework (Terraform)\n2. Decentralized Voting (Solidity/Rust)\n3. ImportExport ZKP Contract\n4. GenAI Cybersecurity Research`,
+            contact: () => `LinkedIn: linkedin.com/in/saumya-desai\nGitHub: github.com/omi201\nEmail: Use encrypted form below\nStatus: Open to opportunities in CA/US`,
+            clear: () => { document.getElementById('terminal-output').innerHTML = ''; return ''; },
+            exit: () => { unlockAchievement('konami'); return 'Session terminated. Connection closed.'; }
+        };
+
+        document.getElementById('terminal-input').addEventListener('keypress', function(e) {
+            if(e.key === 'Enter') {
+                const cmd = this.value.trim();
+                const output = document.getElementById('terminal-output');
+                
+                const line = document.createElement('div');
+                line.innerHTML = `<span class="text-green-500">visitor@desai-secure:~$</span> <span class="text-green-400">${cmd}</span>`;
+                output.appendChild(line);
+                
+                if(commands[cmd]) {
+                    const resp = document.createElement('div');
+                    resp.className = 'text-gray-300 mb-2 whitespace-pre-line';
+                    resp.textContent = commands[cmd]();
+                    output.appendChild(resp);
+                } else if(cmd) {
+                    const err = document.createElement('div');
+                    err.className = 'text-red-500 mb-2';
+                    err.textContent = `Command not found: ${cmd}`;
+                    output.appendChild(err);
+                }
+                
+                this.value = '';
+                output.scrollTop = output.scrollHeight;
+            }
+        });
+
+        // Konami Code
+        let konami = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+        let kIdx = 0;
+        document.addEventListener('keydown', (e) => {
+            if(e.key === konami[kIdx]) {
+                kIdx++;
+                if(kIdx === konami.length) {
+                    unlockAchievement('konami');
+                    document.body.classList.add('konami-rainbow');
+                    setTimeout(() => document.body.classList.remove('konami-rainbow'), 5000);
+                    kIdx = 0;
+                }
+            } else { kIdx = 0; }
+        });
+
+        // Skill Bars Animation
+        ScrollTrigger.create({
+            trigger: "#arsenal",
+            start: "top 80%",
+            onEnter: () => {
+                document.querySelectorAll('.skill-fill').forEach(fill => {
+                    fill.style.width = fill.getAttribute('data-width');
+                });
+            }
+        });
+
+        function playHover() { /* Audio placeholder */ }
+        function submitContact() {
+            unlockAchievement('contact');
+            alert('Signal encrypted and transmitted to secure endpoint.');
+        }
+
+        // Cursor movement
+        const cursorEl = document.getElementById('cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursorEl.style.left = e.clientX + 'px';
+            cursorEl.style.top = e.clientY + 'px';
+        });
+        
+        document.querySelectorAll('.terminal-hover, a, button, input, textarea').forEach(el => {
+            el.addEventListener('mouseenter', () => cursorEl.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursorEl.classList.remove('hover'));
+        });
+
+        // Scroll achievement
+        window.addEventListener('scroll', () => {
+            if((window.scrollY / (document.body.scrollHeight - window.innerHeight)) > 0.3) unlockAchievement('scroll');
+        }, {once: true});
+    </script>
+</body>
+</html>
